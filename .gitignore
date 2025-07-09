@@ -100,3 +100,4 @@ InitTestScene*.unity*
 
 #Rimovione venv
 /venv/
+/app/images/
