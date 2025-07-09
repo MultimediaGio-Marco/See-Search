@@ -18,8 +18,7 @@ def color_based_segmentation(image_rgb):
     b_norm = cv2.normalize(b_channel, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
     _, a_thresh = cv2.threshold(a_norm, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     _, b_thresh = cv2.threshold(b_norm, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    # AND per evitare oversegmentazione
-    color_mask = cv2.bitwise_and(a_thresh, b_thresh)
+    color_mask = cv2.bitwise_or(a_thresh, b_thresh)
     return color_mask
 
 def morphological_cleanup(binary_image, close_kernel_size=5, open_kernel_size=3):
@@ -35,66 +34,36 @@ def edge_pipeline_py(image_path):
     image = Image.open(image_path).convert('RGB')
     image_np = np.array(image)
 
-    # [1] Canale Y con equalizzazione
+    # [1] Estrai canale Y
     ycbcr = rgb2ycbcr(image_np)
-    Y = ycbcr[:, :, 0].astype(np.uint8)
-    Y_eq = cv2.equalizeHist(Y)
-    Y_blur = cv2.GaussianBlur(Y_eq, (5, 5), sigmaX=1)
+    Y = ycbcr[:, :, 0].astype(np.float64)
 
     # [2] Segmentazione colore
     color_mask = color_based_segmentation(image_np)
 
-    # [3] Edge detection multipla
+    # [3] Edge detection
+    Y_blur = cv2.GaussianBlur(Y, (5, 5), sigmaX=1)
+
     dx, dy = sobel_custom(Y_blur)
     laplacian = cv2.Laplacian(Y_blur, cv2.CV_64F)
-    canny = cv2.Canny(Y_blur, 50, 150)
+    canny = cv2.Canny(Y_blur.astype(np.uint8), 50, 150)
 
     magnitude = np.sqrt(dx**2 + dy**2) + np.abs(laplacian)
-    magnitude = cv2.normalize(magnitude, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+    magnitude = cv2.normalize(magnitude, None, 0, 255, cv2.NORM_MINMAX)
 
-    log = cv2.GaussianBlur(Y_blur, (3, 3), 0)
-    log = cv2.Laplacian(log, cv2.CV_64F)
-    log = cv2.normalize(np.abs(log), None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-
-    combined_edges = cv2.bitwise_or(magnitude, canny)
-    combined_edges = cv2.bitwise_or(combined_edges, log)
+    combined_edges = cv2.bitwise_or(magnitude.astype(np.uint8), canny)
     combined_edges = cv2.bitwise_or(combined_edges, color_mask)
 
-    # [4] Soglia Otsu
-    _, BW = cv2.threshold(combined_edges, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    # [4] Soglia (senza wavelet)
+    denoised_norm = combined_edges  # usa direttamente i bordi combinati
+    _, BW = cv2.threshold(denoised_norm, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
     # [5] Cleanup morfologico
     BW = morphological_cleanup(BW)
 
-    # [6] Rimozione oggetti piccoli
+    # [6] Rimuovi oggetti piccoli
     BW_bool = BW > 0
     BW_cleaned = remove_small_objects(BW_bool, min_size=200)
     BW_final = (BW_cleaned * 255).astype(np.uint8)
 
-    # [7] Watershed per separare oggetti attaccati
-    kernel = np.ones((3,3), np.uint8)
-    sure_bg = cv2.dilate(BW_final, kernel, iterations=1)
-
-    dist_transform = cv2.distanceTransform(BW_final, cv2.DIST_L2, 5)
-    _, sure_fg = cv2.threshold(dist_transform, 0.3 * dist_transform.max(), 255, 0)
-    sure_fg = np.uint8(sure_fg)
-    unknown = cv2.subtract(sure_bg, sure_fg)
-
-    # Marker labelling
-    ret, markers = cv2.connectedComponents(sure_fg)
-    markers = markers + 1
-    markers[unknown == 255] = 0
-
-    # Applica watershed
-    image_marked = image_np.copy()
-    markers = cv2.watershed(image_marked, markers)
-
-    # Genera segmentazione finale
-    segmentation = np.zeros_like(BW_final)
-    segmentation[markers > 1] = 255
-
-    # Ricollega parti perse con OR:
-    segmentation_fixed = cv2.bitwise_or(segmentation, BW_final)
-
-
-    return segmentation_fixed.astype(np.uint8), combined_edges, BW_final
+    return BW_final, combined_edges, denoised_norm
