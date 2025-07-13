@@ -77,8 +77,7 @@ def non_max_suppression(boxes, overlap_threshold=0.3):
     return final_boxes
 
 def find_bounding_boxes(binary_image):
-    """Improved bounding box detection"""
-    # Apply watershed segmentation to separate touching objects
+    """Return only the largest bounding box using watershed + NMS"""
     try:
         watershed_labels = watershed_segmentation(binary_image)
         use_watershed = True
@@ -90,68 +89,51 @@ def find_bounding_boxes(binary_image):
     contours = []
     
     if use_watershed and watershed_labels is not None:
-        # Use watershed labels to find separate objects
         unique_labels = np.unique(watershed_labels)
-        
         for label_id in unique_labels:
-            if label_id == 0:  # Skip background
+            if label_id == 0:
                 continue
-                
-            # Create mask for this label
             mask = (watershed_labels == label_id).astype(np.uint8) * 255
-            
-            # Find contours for this mask
             label_contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            
             for contour in label_contours:
                 area = cv2.contourArea(contour)
-                if area < 200:  # Minimum area threshold
+                if area < 200:
                     continue
-                    
                 x, y, w, h = cv2.boundingRect(contour)
-                
-                # Aspect ratio filtering
                 aspect_ratio = w / h
-                if aspect_ratio > 10 or aspect_ratio < 0.1:  # Filter extreme ratios
+                if aspect_ratio > 10 or aspect_ratio < 0.1:
                     continue
-                
-                # Add some padding
                 padding = 5
                 x = max(0, x - padding)
                 y = max(0, y - padding)
-                w = min(binary_image.shape[1] - x, w + 2*padding)
-                h = min(binary_image.shape[0] - y, h + 2*padding)
-                
+                w = min(binary_image.shape[1] - x, w + 2 * padding)
+                h = min(binary_image.shape[0] - y, h + 2 * padding)
                 boxes.append((x, y, w, h))
                 contours.append(contour)
     else:
-        # Fallback to traditional contour detection
         contours_found, _ = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        
         for contour in contours_found:
             area = cv2.contourArea(contour)
-            if area < 200:  # Minimum area threshold
+            if area < 200:
                 continue
-                
             x, y, w, h = cv2.boundingRect(contour)
-            
-            # Aspect ratio filtering
             aspect_ratio = w / h
             if aspect_ratio > 10 or aspect_ratio < 0.1:
                 continue
-            
-            # Add some padding
             padding = 5
             x = max(0, x - padding)
             y = max(0, y - padding)
-            w = min(binary_image.shape[1] - x, w + 2*padding)
-            h = min(binary_image.shape[0] - y, h + 2*padding)
-            
+            w = min(binary_image.shape[1] - x, w + 2 * padding)
+            h = min(binary_image.shape[0] - y, h + 2 * padding)
             boxes.append((x, y, w, h))
-            
-        contours = contours_found
-    
-    # Apply non-maximum suppression to remove overlapping boxes
+            contours.append(contour)
+
+    # Applica NMS
     final_boxes = non_max_suppression(boxes, overlap_threshold=0.3)
-    
-    return final_boxes, contours
+
+    if not final_boxes:
+        return None, []
+
+    # Trova la box con area massima
+    largest_box = max(final_boxes, key=lambda b: b[2] * b[3])
+    return largest_box, contours
