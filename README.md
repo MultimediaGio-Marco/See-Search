@@ -154,4 +154,4 @@ Tutte le immagini usate nel grafo sono salvate nella repository pubblica:
 ## 👥 Autori
 
 * Giovanni Oliverio
-* 
+* Marco D'Albis
