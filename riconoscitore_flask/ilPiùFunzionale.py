@@ -33,35 +33,3 @@ def grabcut_bounding_box(img, iter_count=5):
         x, y, w_box, h_box = rect
 
     return final_mask, (x, y, w_box, h_box)
-
-def main():
-    # === Caricamento e ridimensionamento ===
-    img_path = "../Holopix50k/val/left/-LahPsJhCZTWwgvaAMB4_left.jpg"
-    offset = 40
-    img = cv2.imread(img_path)
-    if img is None:
-        raise FileNotFoundError(f"Immagine non trovata: {img_path}")
-
-    img = cv2.resize(img, (640, 480))
-
-    # === Segmentazione e bounding box GrabCut ===
-    final_mask, (x, y, w_box, h_box) = grabcut_bounding_box(img)
-
-    # === Applicazione maschera ===
-    segmented = cv2.bitwise_and(img, img, mask=final_mask)
-
-    # === Disegna il bounding box ===
-    img_with_rect = img.copy()
-    cv2.rectangle(img_with_rect, (x-offset, y-offset), (x + w_box+offset, y + h_box+offset), (0, 255, 0), 2)
-
-    # === Visualizzazione ===
-    cv2.imshow("Originale con Bounding Box", img_with_rect)
-    cv2.imshow("Segmentazione GrabCut", segmented)
-    cv2.imshow("Maschera Finale", final_mask)
-    print(f"Bounding box GrabCut: x={x}, y={y}, width={w_box}, height={h_box}")
-
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-
-if __name__ == "__main__":
-    main()
