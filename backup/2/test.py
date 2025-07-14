@@ -1,65 +1,33 @@
-import os
 import cv2
-import numpy as np
 import matplotlib.pyplot as plt
-from edge_pipeline import edge_pipeline_py  # Cambia con il nome reale del modulo
-from find_bounding_boxes import find_bounding_boxes  # Cambia con il nome reale del modulo
+from find_bounding_boxes import find_best_box
 
-def run_full_test(image_path, save_results=True):
-    # [1] Carica immagine originale RGB
-    image_rgb = cv2.imread(image_path)
-    image_rgb = cv2.cvtColor(image_rgb, cv2.COLOR_BGR2RGB)
+left_img_path = "../Holopix50k/val/left/-L__uMAz3k25WltzLheY_left.jpg"
+right_img_path = "../Holopix50k/val/right/-L__uMAz3k25WltzLheY_right.jpg"
 
-    # [2] Applica pipeline per ottenere maschera binaria
-    bw_final, combined_edges, denoised_norm = edge_pipeline_py(image_path)
+# Trova la box migliore
+best_box = find_best_box(left_img_path, right_img_path)
+print("Best box:", best_box)
 
-    # [3] Applica bounding box detection
-    boxes, contours = find_bounding_boxes(bw_final)
+# Carica immagine RGB
+image = cv2.imread(left_img_path)
+image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-    # [4] Disegna bounding box su copia dell'immagine originale
-    image_with_boxes = image_rgb.copy()
-    if boxes is not None and not isinstance(boxes, list):
-        boxes = [boxes]
+# Disegna la box (x, y, w, h)
+if best_box:
+    x, y, w, h = best_box
+    cv2.rectangle(image_rgb, (x, y), (x + w, y + h), (255, 0, 0), 2)
 
-    for (x, y, w, h) in boxes:
-        cv2.rectangle(image_with_boxes, (x, y), (x + w, y + h), (0, 255, 0), 2)
+# Mostra l'immagine con matplotlib
+plt.figure(figsize=(10, 6))
+plt.imshow(image_rgb)
+plt.title("Immagine con Best Box")
+plt.axis("off")
+plt.tight_layout()
+plt.show()
 
-    # [5] Visualizza i risultati
-    fig, axes = plt.subplots(1, 4, figsize=(22, 6))
-    fig.suptitle("Edge Detection + Bounding Boxes", fontsize=16)
 
-    axes[0].imshow(image_rgb)
-    axes[0].set_title("Original Image")
-    axes[0].axis("off")
 
-    axes[1].imshow(combined_edges, cmap="gray")
-    axes[1].set_title("Combined Edges")
-    axes[1].axis("off")
-
-    axes[2].imshow(bw_final, cmap="gray")
-    axes[2].set_title("Binary Mask")
-    axes[2].axis("off")
-
-    axes[3].imshow(image_with_boxes)
-    axes[3].set_title(f"Detected Boxes ({len(boxes)})")
-    axes[3].axis("off")
-
-    plt.tight_layout()
-    plt.show()
-
-    # [6] Salvataggio risultati
-    if save_results:
-        out_dir = "./test_outputs"
-        os.makedirs(out_dir, exist_ok=True)
-        base_name = os.path.splitext(os.path.basename(image_path))[0]
-
-        cv2.imwrite(os.path.join(out_dir, f"{base_name}_binary_mask.png"), bw_final)
-        cv2.imwrite(os.path.join(out_dir, f"{base_name}_edges.png"), combined_edges)
-        cv2.imwrite(os.path.join(out_dir, f"{base_name}_with_boxes.png"), cv2.cvtColor(image_with_boxes, cv2.COLOR_RGB2BGR))
-        print(f"[✔] Risultati salvati in {out_dir}")
-
-if __name__ == "__main__":
-    test_image_path = "../Holopix50k/val/left/-L__lwrICsexa0oiALCB_left.jpg"  # <-- cambia con il percorso reale
-    test_image_path = "../Holopix50k/val/left/-LahPsJhCZTWwgvaAMB4_left.jpg"
+    #test_image_path = "../Holopix50k/val/left/-L__lwrICsexa0oiALCB_left.jpg"  # <-- cambia con il percorso reale
+    #test_image_path = "../Holopix50k/val/left/-LahPsJhCZTWwgvaAMB4_left.jpg"
     
-    run_full_test(test_image_path)
