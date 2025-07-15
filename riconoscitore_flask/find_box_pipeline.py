@@ -6,7 +6,7 @@ from deapMap import display_relative_depth_map, relative_depth_map
 import matplotlib.pyplot as plt
 
 print("Working directory:", os.getcwd())
-nomeImage = "-L__uMAz3k25WltzLheY_left"
+nomeImage = "-LahPsJhCZTWwgvaAMB4_left"
 nomeImage = nomeImage.replace("_left", "")
 left_path = f"./Holopix50k/val/left/{nomeImage}_left.jpg"
 right_path = f"./Holopix50k/val/right/{nomeImage}_right.jpg"
@@ -29,7 +29,7 @@ def pipeline_image_detector(left_path, right_path):
     bboxes = extract_bounding_boxes_from_edges(edge_map, min_area=100, threshold=50)
 
     # Clusterizzazione con DBSCAN per unire box vicine
-    merged_bboxes, labels = cluster_boxes_dbscan(bboxes, eps=60, min_samples=1)
+    merged_bboxes, labels = cluster_boxes_dbscan(bboxes, eps=55, min_samples=1)
 
     # Rimozione box troppo grandi e contenute
     img_area = left.shape[0] * left.shape[1]
@@ -77,7 +77,11 @@ def pipeline_image_detector_stamp(left_path, right_path):
     cv2.waitKey(0)
 
     # Clusterizza le bounding box con DBSCAN
-    merged_bboxes, labels = cluster_boxes_dbscan(bboxes, eps=60, min_samples=1)
+    merged_bboxes, labels = cluster_boxes_dbscan(bboxes, eps=55, min_samples=1)
+    #merged_bboxes, labels = cluster_boxes_agglomerative(bboxes, max_distance=60)
+    #merged_bboxes, labels = cluster_boxes_dbscan_with_iou(bboxes, eps=1000, min_samples=1, iou_threshold=0.3)
+    #merged_bboxes=merge_contact_boxes(merged_bboxes,0)
+    #merged_bboxes = merge_boxes_connected_components(bboxes, left.shape)
     output_img = left.copy()
     for (x, y, w, h) in merged_bboxes:
         cv2.rectangle(output_img, (x, y), (x + w, y + h), (0, 0, 255), 2)
