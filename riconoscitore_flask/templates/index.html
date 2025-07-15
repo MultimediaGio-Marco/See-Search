@@ -1,360 +1,82 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Object Recognizer + Wiki</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            backdrop-filter: blur(10px);
-        }
-        
-        h1 {
-            text-align: center;
-            color: #2c3e50;
-            margin-bottom: 40px;
-            font-size: 2.5em;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .upload-section {
-            background: #f8f9fa;
-            border: 3px dashed #dee2e6;
-            border-radius: 15px;
-            padding: 40px;
-            text-align: center;
-            margin-bottom: 30px;
-            transition: all 0.3s ease;
-        }
-        
-        .upload-section:hover {
-            border-color: #667eea;
-            background: #f1f3f4;
-        }
-        
-        .upload-section.dragover {
-            border-color: #667eea;
-            background: #e3f2fd;
-        }
-        
-        .file-input {
-            display: none;
-        }
-        
-        .file-label {
-            display: inline-block;
-            padding: 15px 30px;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: transform 0.2s ease;
-            margin-bottom: 20px;
-        }
-        
-        .file-label:hover {
-            transform: translateY(-2px);
-        }
-        
-        .submit-btn {
-            background: linear-gradient(45deg, #28a745, #20c997);
-            color: white;
-            padding: 15px 40px;
-            border: none;
-            border-radius: 10px;
-            font-size: 18px;
-            cursor: pointer;
-            transition: transform 0.2s ease;
-            display: inline-block;
-            margin-top: 10px;
-        }
-        
-        .submit-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-        }
-        
-        .submit-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        
-        .results {
-            margin-top: 40px;
-        }
-        
-        .result-header {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-            padding: 20px;
-            border-radius: 15px 15px 0 0;
-            font-size: 1.5em;
-            text-align: center;
-        }
-        
-        .result-content {
-            background: white;
-            padding: 30px;
-            border-radius: 0 0 15px 15px;
-            border: 1px solid #e0e0e0;
-        }
-        
-        .description {
-            font-size: 16px;
-            line-height: 1.8;
-            color: #333;
-            margin-bottom: 30px;
-            text-align: justify;
-        }
-        
-        .image-container {
-            text-align: center;
-            margin-top: 30px;
-        }
-        
-        .processed-image {
-            max-width: 100%;
-            max-height: 500px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            transition: transform 0.3s ease;
-        }
-        
-        .processed-image:hover {
-            transform: scale(1.02);
-        }
-        
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 20px;
-            border-radius: 10px;
-            border: 1px solid #f5c6cb;
-            margin: 20px 0;
-            text-align: center;
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #6c757d;
-        }
-        
-        .loading-spinner {
-            display: inline-block;
-            width: 40px;
-            height: 40px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .file-preview {
-            margin-top: 20px;
-            text-align: center;
-        }
-        
-        .file-preview img {
-            max-width: 200px;
-            max-height: 200px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-        
-        .stats {
-            display: flex;
-            justify-content: space-around;
-            margin-top: 20px;
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-        }
-        
-        .stat {
-            text-align: center;
-        }
-        
-        .stat-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: #667eea;
-        }
-        
-        .stat-label {
-            font-size: 14px;
-            color: #6c757d;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stereo Object Recognizer + Wiki</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
 </head>
 <body>
-    <div class="container">
-        <h1>🔍 Object Recognizer + Wiki</h1>
-        
-        <div class="upload-section" id="upload-section">
-            <form method="POST" enctype="multipart/form-data" id="upload-form">
-                <input type="file" name="image" accept="image/*" required class="file-input" id="file-input">
-                <label for="file-input" class="file-label">
-                    📁 Seleziona un'immagine
-                </label>
-                <div id="file-preview" class="file-preview"></div>
-                <div>
-                    <button type="submit" class="submit-btn" id="submit-btn">
-                        🚀 Analizza Immagine
-                    </button>
-                </div>
-            </form>
-        </div>
+  <div class="container">
+    <h1>🎯 Stereo Object Recognizer + Wiki</h1>
+    <p class="subtitle">Carica due immagini stereo per riconoscere oggetti e informazioni</p>
 
-        <div id="loading" class="loading" style="display: none;">
-            <div class="loading-spinner"></div>
-            <p>Analizzando l'immagine e cercando informazioni...</p>
+    <div class="upload-section">
+      <form id="upload-form" method="POST" enctype="multipart/form-data">
+        <div class="stereo-container">
+          <!-- Sinistra -->
+          <div class="image-upload" id="left-upload">
+            <h3>📷 Immagine Sinistra</h3>
+            <input type="file" id="left-input" name="left_image" accept="image/*" class="file-input" required />
+            <label for="left-input" class="file-label">📁 Seleziona Sinistra</label>
+            <div id="left-preview" class="file-preview empty">Nessuna immagine</div>
+          </div>
+          <!-- Destra -->
+          <div class="image-upload" id="right-upload">
+            <h3>📷 Immagine Destra</h3>
+            <input type="file" id="right-input" name="right_image" accept="image/*" class="file-input" required />
+            <label for="right-input" class="file-label">📁 Seleziona Destra</label>
+            <div id="right-preview" class="file-preview empty">Nessuna immagine</div>
+          </div>
         </div>
-
-        {% if error %}
-        <div class="error">
-            <strong>❌ Errore:</strong> {{ error }}
+        <div class="submit-container">
+          <button id="submit-btn" type="submit" class="submit-btn">🚀 Analizza Stereo</button>
         </div>
-        {% endif %}
-
-        {% if label %}
-        <div class="results">
-            <div class="result-header">
-                🎯 Oggetto riconosciuto: {{ label }}
-            </div>
-            <div class="result-content">
-                <div class="description">
-                    {{ description|safe }}
-                </div>
-                
-                {% if image_info and image_info.success %}
-                <div class="image-container">
-                    <h3>📸 Immagine elaborata:</h3>
-                    <img src="{{ url_for('static', filename='processed_upload.jpg') }}?v={{ timestamp }}" 
-                         alt="Immagine elaborata" 
-                         class="processed-image"
-                         onerror="this.src='data:image/jpeg;base64,{{ image_info.base64_data }}'; this.onerror=null;">
-                </div>
-                {% endif %}
-                
-                <div class="stats">
-                    <div class="stat">
-                        <div class="stat-value">✅</div>
-                        <div class="stat-label">Riconosciuto</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-value">{{ description|length }}</div>
-                        <div class="stat-label">Caratteri info</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-value">🔍</div>
-                        <div class="stat-label">Da Google/Wiki</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endif %}
+      </form>
     </div>
 
-    <script>
-        const fileInput = document.getElementById('file-input');
-        const filePreview = document.getElementById('file-preview');
-        const uploadForm = document.getElementById('upload-form');
-        const submitBtn = document.getElementById('submit-btn');
-        const loading = document.getElementById('loading');
-        const uploadSection = document.getElementById('upload-section');
+    <div id="loading" class="loading" style="display:none">
+      <div class="loading-spinner"></div>
+      <p>Elaborazione in corso…</p>
+    </div>
 
-        // Preview dell'immagine selezionata
-        fileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    filePreview.innerHTML = `
-                        <img src="${e.target.result}" alt="Preview">
-                        <p>File: ${file.name}</p>
-                    `;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
+    {% if error %}
+    <div class="error">
+      <strong>❌ Errore:</strong> {{ error }}
+    </div>
+    {% endif %}
 
-        // Gestione del form
-        uploadForm.addEventListener('submit', function(e) {
-            const file = fileInput.files[0];
-            if (!file) {
-                e.preventDefault();
-                alert('Seleziona un\'immagine prima di procedere');
-                return;
-            }
+    {% if label %}
+    <div class="results">
+      <div class="result-header">🎯 Riconosciuto: {{ label }}</div>
+      <div class="result-content">
+        <p class="description">{{ description|safe }}</p>
 
-            // Mostra loading
-            loading.style.display = 'block';
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '⏳ Elaborando...';
-        });
+        <div class="images-container" style="display:flex; gap:1rem;">
+          <div class="image-result">
+            <h4>Sinistra</h4>
+            <div class="img-wrapper">
+              <img src="data:image/jpeg;base64,{{ left_img }}" alt="Risultato sinistra" class="processed-image" />
+            </div>
+          </div>
+          <div class="image-result">
+            <h4>Destra</h4>
+            <div class="img-wrapper">
+              <img src="data:image/jpeg;base64,{{ right_img }}" alt="Risultato destra" class="processed-image" />
+            </div>
+          </div>
+        </div>
 
-        // Drag and drop
-        uploadSection.addEventListener('dragover', function(e) {
-            e.preventDefault();
-            uploadSection.classList.add('dragover');
-        });
-
-        uploadSection.addEventListener('dragleave', function(e) {
-            e.preventDefault();
-            uploadSection.classList.remove('dragover');
-        });
-
-        uploadSection.addEventListener('drop', function(e) {
-            e.preventDefault();
-            uploadSection.classList.remove('dragover');
-            
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                const file = files[0];
-                if (file.type.startsWith('image/')) {
-                    fileInput.files = files;
-                    fileInput.dispatchEvent(new Event('change'));
-                }
-            }
-        });
-
-        // Smooth scroll ai risultati
-        {% if label %}
-        setTimeout(() => {
-            document.querySelector('.results').scrollIntoView({ 
-                behavior: 'smooth' 
-            });
-        }, 100);
-        {% endif %}
-    </script>
+        <div class="stats">
+          <div class="stat"><div class="stat-value">✅</div><div class="stat-label">Riconosciuto</div></div>
+          <div class="stat"><div class="stat-value">{{ description|length }}</div><div class="stat-label">Caratteri</div></div>
+          <div class="stat"><div class="stat-value">🔍</div><div class="stat-label">Fonte</div></div>
+          <div class="stat"><div class="stat-value">📷📷</div><div class="stat-label">Stereo</div></div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>
