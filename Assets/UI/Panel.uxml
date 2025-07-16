@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UXML xmlns="UnityEngine.UIElements" xmlns:ui="UnityEditor.UIElements" xmlns:vt="UnityEngine.UIElements">
+  <VisualElement name="root" class="root">
+    <!-- Floating Card Styled Panel -->
+    <VisualElement name="top-panel" class="top-panel">
+      <!-- Optional Image Section -->
+      <VisualElement name="card-image" class="card-image">
+        <Image name="panel-image" class="panel-image" />
+      </VisualElement>
+      <!-- Content Section -->
+      <VisualElement name="card-content" class="card-content">
+        <!-- Title: between 30 and 100 characters -->
+        <Label name="card-title" class="card-title" text="Esplorando le meraviglie della natura incontaminata e oltre" />
+        <!-- Divider -->
+        <VisualElement name="card-divider" class="card-divider" />
+        <!-- Description -->
+        <Label name="card-description" class="card-description"
+          text="Immergiti nella bellezza dei paesaggi naturali dove montagne maestose si incontrano con cieli infiniti. Scopri la magia di luoghi incontaminati e ritrova la connessione con la terra." />
+      </VisualElement>
+      <!-- Floating Indicator (optional) -->
+      <VisualElement name="floating-indicator" class="floating-indicator">
+        <Label text="↑ Scorri per maggiori info" />
+      </VisualElement>
+    </VisualElement>
+  </VisualElement>
+</UXML>

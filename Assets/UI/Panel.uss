@@ -1,0 +1,73 @@
+.root {
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.top-panel {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    height: 300px;
+    background-color: rgba(255, 255, 255, 0.8);
+    border-radius: 24px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1), 0 3px 10px rgba(0, 0, 0, 0.05);
+    padding: 16px;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.card-image {
+    height: 120px;
+    width: 100%;
+    margin-bottom: 12px;
+    overflow: hidden;
+    border-radius: 16px;
+}
+
+.panel-image {
+    object-fit: cover;
+    /* Assign sprite or texture via code or inspector */
+}
+
+.card-content {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.card-title {
+    font-size: 18px;
+    unity-font-style: Bold;
+    color: #2d2b55;
+    margin-bottom: 8px;
+    unity-text-align: MiddleCenter;
+}
+
+.card-divider {
+    height: 4px;
+    width: 60px;
+    margin-bottom: 12px;
+    background: linear-gradient(to right, #6a11cb, #2575fc);
+    border-radius: 2px;
+}
+
+.card-description {
+    font-size: 14px;
+    color: #5a5773;
+    line-height: 1.4;
+}
+
+.floating-indicator {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    translate: -50% 0;
+    opacity: 0.7;
+    unity-text-align: MiddleCenter;
+}

@@ -6,6 +6,7 @@ using System.Collections;
 using System.IO;
 using System.Collections.Generic;
 using TMPro;
+using UnityEngine.UI;
 
 
 [Serializable]
@@ -20,10 +21,13 @@ public class LableResponse
 {
     public string label;
     public string description;
+    public string image;
 }
 
-public class VRImageFilterClient : MonoBehaviour
+public class client : MonoBehaviour
 {
+    public Image image;  // Da assegnare via editor
+
     public TMP_Text lable;
     public TMP_Text desc;
     [Header("Server Config")]
@@ -58,7 +62,7 @@ public class VRImageFilterClient : MonoBehaviour
         string jsonBody = JsonUtility.ToJson(request);
         
         // 3. Invia la richiesta al server
-        UnityWebRequest www = new UnityWebRequest("http://" + serverUrl + "/api/process", "POST");
+        UnityWebRequest www = new UnityWebRequest(serverUrl, "POST");
         byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonBody);
         www.uploadHandler = new UploadHandlerRaw(bodyRaw);
         www.downloadHandler = new DownloadHandlerBuffer();
@@ -89,11 +93,31 @@ public class VRImageFilterClient : MonoBehaviour
                 }
                 lable.text = response.label;
                 desc.text = response.description;
-                // 5. Salva immagine filtrata
-                /*string savePath = Path.Combine(Application.persistentDataPath, saveFileName);
-                File.WriteAllBytes(savePath, resultBytes);*/
+                string base64Image = response.image;
+                if (base64Image.StartsWith("data:image"))
+                {
+                    base64Image = base64Image.Substring(base64Image.IndexOf(",") + 1);
+                }
 
-                // 6. Aggiorna l'immagine nel componente UI
+                byte[] imageBytes = Convert.FromBase64String(base64Image);
+                Texture2D tex = new Texture2D(2, 2); // placeholder size
+                if (tex.LoadImage(imageBytes))
+                {
+                    Sprite newSprite = Sprite.Create(
+                        tex,
+                        new Rect(0, 0, tex.width, tex.height),
+                        new Vector2(0.5f, 0.5f) // pivot al centro
+                    );
+
+                    image.sprite = newSprite;
+                    image.enabled = true;
+                    Debug.Log("[GameLM] 🖼️ Immagine caricata correttamente");
+                }
+
+                else
+                {
+                    Debug.LogError("[GameLM] ❌ Errore nel caricamento della texture");
+                }
 
                 Debug.Log("[GameLM] ✔ Immagine filtrata aggiornata in: ");
                
