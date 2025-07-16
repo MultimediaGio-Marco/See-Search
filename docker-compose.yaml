@@ -1,0 +1,16 @@
+services:
+  app:
+    image: oligiovi/riconoscitore_flask:RV1_latest
+    container_name: riconoscitore_flask
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+    environment:
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
+    networks:
+      - riconoscitore_network
+
+networks:
+  riconoscitore_network:
+    driver: bridge

@@ -11,7 +11,7 @@ public class StereoCapture : MonoBehaviour
     public int imageHeight = 1024;
     
     [Header("VR Image Filter Client")]
-    public VRImageFilterClient imageFilterClient;
+    public client imageFilterClient;
 
     [Header("Input Settings")]
     public XRNode controllerHand = XRNode.RightHand; // Quale controller usare
