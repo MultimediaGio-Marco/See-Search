@@ -3159,6 +3159,7 @@ GameObject:
   - component: {fileID: 233341863}
   - component: {fileID: 233341862}
   - component: {fileID: 233341861}
+  - component: {fileID: 233341864}
   m_Layer: 0
   m_Name: client
   m_TagString: Untagged
@@ -3178,6 +3179,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ce7c90cbc1ac5be4c966400b4916d834, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  image: {fileID: 1564249864}
   lable: {fileID: 873458683}
   desc: {fileID: 1704623043}
   serverUrl: http://127.0.0.1:5000/api/process
@@ -3189,7 +3191,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 233341860}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0e3165947d494e14c8896cb2162cab9f, type: 3}
   m_Name: 
@@ -3198,7 +3200,7 @@ MonoBehaviour:
   rightEyeCamera: {fileID: 649686416}
   imageWidth: 1024
   imageHeight: 1024
-  imageFilterClient: {fileID: 233341861}
+  imageFilterClient: {fileID: 0}
   controllerHand: 5
 --- !u!4 &233341863
 Transform:
@@ -3215,6 +3217,22 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &233341864
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 233341860}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3278dd82208205e45929c1d4a3e52909, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  imageWidth: 1024
+  imageHeight: 1024
+  imageFilterClient: {fileID: 233341861}
+  controllerHand: 5
 --- !u!1 &234368968
 GameObject:
   m_ObjectHideFlags: 0

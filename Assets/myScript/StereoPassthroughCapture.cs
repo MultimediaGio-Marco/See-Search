@@ -1,80 +1,107 @@
-using UnityEngine;
 using System.Collections;
+using UnityEngine;
 using UnityEngine.XR;
+using UnityEngine.UI;
 
-public class StereoPassthroughCapture : MonoBehaviour
+public class PassthroughStereoCapture : MonoBehaviour
 {
-    public int imageWidth = 1024;  // larghezza per occhio
-    public int imageHeight = 1024; // altezza per occhio
+    public RawImage leftEyeRawImage;   // opzionale, serve per debug o mostrare feed
+    public RawImage rightEyeRawImage;  // opzionale
 
-    [Header("VR Image Filter Client")]
-    public client imageFilterClient;
+    public int captureWidth = 1024;
+    public int captureHeight = 1024;
 
-    [Header("Input Settings")]
+    public client imageFilterClient;   // assegna in Inspector
+
+    private WebCamTexture leftEyeCamTex;
+    private WebCamTexture rightEyeCamTex;
+
+    private bool isCapturing = false;
     public XRNode controllerHand = XRNode.RightHand;
-
     private bool triggerPressed = false;
+
+    void Start()
+    {
+        StartCoroutine(InitPassthroughCameras());
+    }
+
+    IEnumerator InitPassthroughCameras()
+    {
+        yield return new WaitForSeconds(1f);
+
+        var devices = WebCamTexture.devices;
+        string leftCamName = null;
+        string rightCamName = null;
+
+        foreach (var device in devices)
+        {
+            Debug.Log("WebCam device found: " + device.name);
+            if (device.name.ToLower().Contains("left"))
+                leftCamName = device.name;
+            if (device.name.ToLower().Contains("right"))
+                rightCamName = device.name;
+        }
+
+        if (leftCamName == null || rightCamName == null)
+        {
+            Debug.LogError("WebCam left or right eye not found!");
+            yield break;
+        }
+
+        leftEyeCamTex = new WebCamTexture(leftCamName, captureWidth, captureHeight, 30);
+        leftEyeRawImage.texture = leftEyeCamTex;
+        leftEyeCamTex.Play();
+
+        rightEyeCamTex = new WebCamTexture(rightCamName, captureWidth, captureHeight, 30);
+        rightEyeRawImage.texture = rightEyeCamTex;
+        rightEyeCamTex.Play();
+    }
 
     void Update()
     {
-        CheckTriggerInput();
-    }
-
-    void CheckTriggerInput()
-    {
         InputDevice device = InputDevices.GetDeviceAtXRNode(controllerHand);
-        if (device.isValid)
+        if (!device.isValid)
+            return;
+
+        if (device.TryGetFeatureValue(CommonUsages.triggerButton, out bool pressed))
         {
-            bool triggerValue;
-            if (device.TryGetFeatureValue(CommonUsages.triggerButton, out triggerValue))
+            if (pressed && !triggerPressed && !isCapturing)
             {
-                if (triggerValue && !triggerPressed)
-                {
-                    Debug.Log("Trigger pressed - Starting stereo passthrough capture");
-                    CaptureStereoImages();
-                }
-                triggerPressed = triggerValue;
+                StartCoroutine(CaptureAndSend());
             }
+            triggerPressed = pressed;
         }
     }
 
-    public void CaptureStereoImages()
+    IEnumerator CaptureAndSend()
     {
-        StartCoroutine(CaptureCoroutine());
-    }
+        isCapturing = true;
 
-    IEnumerator CaptureCoroutine()
-    {
         yield return new WaitForEndOfFrame();
 
-        // Lo schermo composito stereo è tipicamente due immagini affiancate:
-        // Sinistro sulla metà sinistra, destro sulla metà destra dello schermo
+        if (leftEyeCamTex == null || rightEyeCamTex == null)
+        {
+            Debug.LogError("Camere passthrough non inizializzate");
+            isCapturing = false;
+            yield break;
+        }
 
-        int totalWidth = imageWidth * 2;  // 2 occhi affiancati
+        Texture2D leftTex = new Texture2D(leftEyeCamTex.width, leftEyeCamTex.height, TextureFormat.RGB24, false);
+        leftTex.SetPixels(leftEyeCamTex.GetPixels());
+        leftTex.Apply();
 
-        // Cattura occhio sinistro (metà sinistra)
-        Texture2D leftEyeImage = new Texture2D(imageWidth, imageHeight, TextureFormat.RGB24, false);
-        leftEyeImage.ReadPixels(new Rect(0, 0, imageWidth, imageHeight), 0, 0);
-        leftEyeImage.Apply();
+        Texture2D rightTex = new Texture2D(rightEyeCamTex.width, rightEyeCamTex.height, TextureFormat.RGB24, false);
+        rightTex.SetPixels(rightEyeCamTex.GetPixels());
+        rightTex.Apply();
 
-        // Cattura occhio destro (metà destra)
-        Texture2D rightEyeImage = new Texture2D(imageWidth, imageHeight, TextureFormat.RGB24, false);
-        rightEyeImage.ReadPixels(new Rect(imageWidth, 0, imageWidth, imageHeight), 0, 0);
-        rightEyeImage.Apply();
-
-        // Passa le texture al client (in ordine destro, sinistro come nel tuo esempio)
         if (imageFilterClient != null)
         {
-            yield return StartCoroutine(imageFilterClient.RequestLableForImage(rightEyeImage, leftEyeImage));
-        }
-        else
-        {
-            Debug.LogWarning("VRImageFilterClient non assegnato");
+            yield return StartCoroutine(imageFilterClient.RequestLableForImage(rightTex, leftTex));
         }
 
-        Destroy(leftEyeImage);
-        Destroy(rightEyeImage);
+        Destroy(leftTex);
+        Destroy(rightTex);
 
-        Debug.Log("Stereo passthrough images processed and cleaned");
+        isCapturing = false;
     }
 }
