@@ -59,7 +59,7 @@ public class StereoPhotoCapture : MonoBehaviour
         CapturePhoto(ref leftPhoto);
         leftQuadRenderer.material.SetTexture(TextureName, leftPhoto);
         Debug.Log("Foto occhio sinistro acquisita");
-
+        //test
         // --- RIGHT EYE ---
         webCamTextureManager.Eye = PassthroughCameraEye.Right;
         yield return new WaitForEndOfFrame();
