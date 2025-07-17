@@ -2,12 +2,12 @@ using UnityEngine;
 using UnityEngine.XR;
 using System.Collections;
 using PassthroughCameraSamples;
+using System;
 
 public class StereoPhotoCapture : MonoBehaviour
 {
-    [Header("WebCamTexture Managers")]
-    public WebCamTextureManager leftWebCamTextureManager;
-    public WebCamTextureManager rightWebCamTextureManager;
+    [Header("WebCamTexture Manager")]
+    public WebCamTextureManager webCamTextureManager;
 
     [Header("Quad Renderers")]
     public Renderer leftQuadRenderer;
@@ -15,84 +15,75 @@ public class StereoPhotoCapture : MonoBehaviour
 
     [Header("Controller Settings")]
     public XRNode controllerHand = XRNode.RightHand;
+    public string TextureName = "_MainTex";
+
+    private Texture2D leftPhoto;
+    private Texture2D rightPhoto;
+
     private bool triggerPressed = false;
+    private bool isCapturing = false;
 
     void Update()
     {
-        // Controlla il grilletto
+        if (!isCapturing)
+            CheckTriggerInput();
+    }
+
+    void CheckTriggerInput()
+    {
         InputDevice device = InputDevices.GetDeviceAtXRNode(controllerHand);
-        if (!device.isValid)
-            return;
 
-        bool triggerValue;
-        if (device.TryGetFeatureValue(CommonUsages.triggerButton, out triggerValue))
+        if (device.isValid)
         {
-            if (triggerValue && !triggerPressed)
+            bool triggerValue;
+            if (device.TryGetFeatureValue(CommonUsages.triggerButton, out triggerValue))
             {
-                Debug.Log("[StereoPhotoCapture] Trigger pressed, starting stereo capture.");
-                StartCoroutine(TakeStereoPhoto());
+                if (triggerValue && !triggerPressed)
+                {
+                    Debug.Log("Grilletto premuto - Avvio cattura stereo");
+                    StartCoroutine(CaptureStereo());
+                }
+                triggerPressed = triggerValue;
             }
-            triggerPressed = triggerValue;
         }
     }
 
-    private IEnumerator TakeStereoPhoto()
+    IEnumerator CaptureStereo()
     {
-        // Cattura occhio sinistro
-        yield return StartCoroutine(CaptureEye(
-            leftWebCamTextureManager,
-            leftQuadRenderer,
-            PassthroughCameraEye.Left));
+        isCapturing = true;
 
-        // Piccola pausa per stabilizzare
+        // --- LEFT EYE ---
+        webCamTextureManager.Eye = PassthroughCameraEye.Left;
+        yield return new WaitForEndOfFrame(); // attende aggiornamento texture
+        yield return new WaitForSeconds(0.1f); // opzionale: attende che la webcam aggiorni davvero
+        CapturePhoto(ref leftPhoto);
+        leftQuadRenderer.material.SetTexture(TextureName, leftPhoto);
+        Debug.Log("Foto occhio sinistro acquisita");
+        //test
+        // --- RIGHT EYE ---
+        webCamTextureManager.Eye = PassthroughCameraEye.Right;
         yield return new WaitForEndOfFrame();
+        yield return new WaitForSeconds(0.1f);
+        CapturePhoto(ref rightPhoto);
+        rightQuadRenderer.material.SetTexture(TextureName, rightPhoto);
+        Debug.Log("Foto occhio destro acquisita");
 
-        // Cattura occhio destro
-        yield return StartCoroutine(CaptureEye(
-            rightWebCamTextureManager,
-            rightQuadRenderer,
-            PassthroughCameraEye.Right));
+        isCapturing = false;
     }
 
-    private IEnumerator CaptureEye(
-        WebCamTextureManager manager,
-        Renderer targetQuad,
-        PassthroughCameraEye eye)
+    void CapturePhoto(ref Texture2D photo)
     {
-        if (manager == null || targetQuad == null)
+        int width = webCamTextureManager.WebCamTexture.width;
+        int height = webCamTextureManager.WebCamTexture.height;
+
+        if (photo == null || photo.width != width || photo.height != height)
         {
-            Debug.LogError("[StereoPhotoCapture] Manager o Quad non assegnato.");
-            yield break;
+            photo = new Texture2D(width, height, TextureFormat.RGB24, false);
         }
 
-        // 1) Spegni il manager per permettere il cambio
-        manager.enabled = false;
-        yield return null; // aspetta un frame
-
-        // 2) Cambia l'occhio e riaccendi
-        manager.Eye = eye;
-        manager.enabled = true;
-
-        // 3) Aspetta che la WebCamTexture sia in play
-        //    e attendi un frame per sicurezza
-        while (manager.WebCamTexture == null || !manager.WebCamTexture.isPlaying)
-            yield return null;
-        yield return new WaitForEndOfFrame();
-
-        // 4) Crea la Texture2D e copia i pixel
-        var webcamTex = manager.WebCamTexture;
-        Texture2D photo = new Texture2D(
-            webcamTex.width,
-            webcamTex.height,
-            TextureFormat.RGB24,
-            false);
-
-        Color32[] pixels = webcamTex.GetPixels32();
+        Color32[] pixels = new Color32[width * height];
+        webCamTextureManager.WebCamTexture.GetPixels32(pixels);
         photo.SetPixels32(pixels);
         photo.Apply();
-
-        // 5) Assegna la foto al quad
-        targetQuad.material.mainTexture = photo;
-        Debug.Log($"[StereoPhotoCapture] Captured {eye} eye: {webcamTex.width}x{webcamTex.height}");
     }
 }
