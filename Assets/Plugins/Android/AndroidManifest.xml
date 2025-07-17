@@ -37,4 +37,10 @@
   <uses-feature
       android:name="android.hardware.vr.headtracking"
       android:required="true" />
+
+  <!-- ✅ Permessi e feature aggiunti dal secondo manifest -->
+  <uses-permission android:name="com.oculus.permission.USE_ANCHOR_API" />
+  <uses-permission android:name="com.oculus.permission.USE_SCENE" />
+  <uses-permission android:name="horizonos.permission.HEADSET_CAMERA" />
+  <uses-feature android:name="com.oculus.feature.PASSTHROUGH" android:required="true" />
 </manifest>
