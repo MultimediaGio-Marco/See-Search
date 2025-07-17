@@ -12,12 +12,22 @@ public class PassthroughCameraDispay : MonoBehaviour
 
     // Update is called once per frame
     void Update()
+{
+    if (webCamTextureManager != null)
     {
-        if (webCamTextureManager != null)
+        if (webCamTextureManager.WebCamTexture != null)
         {
-            // Update the texture of the quad with the webcam texture
             quadRenderer.material.mainTexture = webCamTextureManager.WebCamTexture;
         }
-        
+        else
+        {
+            Debug.LogWarning("[MYError] WebCamTexture is null.");
+        }
     }
+    else
+    {
+        Debug.LogError("[MYError] webCamTextureManager not assigned.");
+    }
+}
+
 }
