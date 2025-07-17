@@ -1,33 +1,50 @@
 using UnityEngine;
 using PassthroughCameraSamples;
-public class PassthroughCameraDispay : MonoBehaviour
-{
-    public WebCamTextureManager webCamTextureManager;
-    public Renderer quadRenderer;
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
 
-    // Update is called once per frame
-    void Update()
+public class PassthroughCameraDisplayStereo : MonoBehaviour
 {
-    if (webCamTextureManager != null)
+    [Header("WebCamTexture Managers")]
+    public WebCamTextureManager leftWebCamTextureManager;
+    public WebCamTextureManager rightWebCamTextureManager;
+
+    [Header("Quad Renderers")]
+    public Renderer leftQuadRenderer;
+    public Renderer rightQuadRenderer;
+
+    void Update()
     {
-        if (webCamTextureManager.WebCamTexture != null)
+        // Occhio sinistro
+        if (leftWebCamTextureManager != null)
         {
-            quadRenderer.material.mainTexture = webCamTextureManager.WebCamTexture;
+            if (leftWebCamTextureManager.WebCamTexture != null)
+            {
+                leftQuadRenderer.material.mainTexture = leftWebCamTextureManager.WebCamTexture;
+            }
+            else
+            {
+                Debug.LogWarning("[MYError] Left WebCamTexture is null.");
+            }
         }
         else
         {
-            Debug.LogWarning("[MYError] WebCamTexture is null.");
+            Debug.LogError("[MYError] Left WebCamTextureManager not assigned.");
+        }
+
+        // Occhio destro
+        if (rightWebCamTextureManager != null)
+        {
+            if (rightWebCamTextureManager.WebCamTexture != null)
+            {
+                rightQuadRenderer.material.mainTexture = rightWebCamTextureManager.WebCamTexture;
+            }
+            else
+            {
+                Debug.LogWarning("[MYError] Right WebCamTexture is null.");
+            }
+        }
+        else
+        {
+            Debug.LogError("[MYError] Right WebCamTextureManager not assigned.");
         }
     }
-    else
-    {
-        Debug.LogError("[MYError] webCamTextureManager not assigned.");
-    }
-}
-
 }
