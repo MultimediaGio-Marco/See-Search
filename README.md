@@ -6,7 +6,7 @@ Pipeline completa per elaborazione di immagini stereo, mirata a rilevare oggetti
 
 ## 📊 Schema della Pipeline
 
-![Schema Pipeline](https://raw.githubusercontent.com/MultimediaGio-Marco/immaginiGradoTD/main/pipeline.png)
+![Schema Pipeline](https://raw.githubusercontent.com/MultimediaGio-Marco/immaginiGradoTD/main/detection_results.png)
 
 > Ogni nodo del grafo mostra un'immagine intermedia reale generata dalla pipeline, con input stereo e risultati visivi per ogni fase.
 
