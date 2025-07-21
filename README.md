@@ -1,6 +1,6 @@
-# 👀 Stereo Edge Detection Pipeline
+# 👀 Stereo Object Detection Pipeline
 
-Pipeline completa per elaborazione di immagini stereo, mirata a rilevare oggetti salienti tramite edge detection e stima della profondità.
+Pipeline completa per l'elaborazione di immagini **stereo**, mirata a rilevare **oggetti salienti** tramite edge detection, stima della profondità e fusione delle mappe di salienza.
 
 ---
 
@@ -8,122 +8,100 @@ Pipeline completa per elaborazione di immagini stereo, mirata a rilevare oggetti
 
 ![Schema Pipeline](https://raw.githubusercontent.com/MultimediaGio-Marco/immaginiGradoTD/main/pipeline_integrazione_deaphMap.png)
 
-> Ogni nodo del grafo mostra un'immagine intermedia reale generata dalla pipeline, con input stereo e risultati visivi per ogni fase.
+> Ogni nodo mostra una fase reale della pipeline: da input stereo a maschere finali e box rilevati.
 
 ---
 
-## 🔍 Fasi principali
+## 🧱 Architettura Modulare
 
-### 1. 🧪 Preprocessing
+La pipeline è divisa in tre moduli principali:
 
-* L'immagine viene convertita nello spazio colore **YCrCb**.
-* Si equalizza l'istogramma del canale Y per migliorare il contrasto.
-
-```python
-def preprocess(img):
-    cv2.GaussianBlur(img, (5, 5), 0, img)
-    Y, Cb, Cr = cv2.split(cv2.cvtColor(img, cv2.COLOR_BGR2YCrCb))
-    Y = cv2.equalizeHist(Y)
-    return Y
-```
+* `StereoEdgeProcessor`: Estrae edge salienti dalle immagini stereo.
+* `DeapMapProcessor`: Calcola la profondità e genera maschere di salienza 3D.
+* `StereoObjectDetector`: Coordina l'esecuzione parallela e fonde i risultati per individuare box affidabili.
 
 ---
 
-### 2. 🧠 Calcolo Edge (Left & Right)
+## 🔄 Flusso della Pipeline
 
-* Per ciascuna immagine pre-processata si calcolano:
+### 1. 🔧 Preprocessing (interno ai moduli)
 
-  * **Canny**
-  * **Sobel** → magnitudine
-  * **Laplaciano**
+Le immagini stereo vengono preprocessate:
+
+* Conversione in **YCrCb**
+* Equalizzazione del canale Y
+* Calcolo di edge: **Canny**, **Sobel Magnitude**, **Laplaciano**
+
+---
+
+### 2. 🧠 Estrazione Edge Stereo
+
+Il modulo `StereoEdgeProcessor` esegue edge detection su **entrambe** le immagini e ne fonde i risultati:
 
 ```python
-def compute_edges(gray):
-    canny = cv2.Canny(gray, 50, 150)
-    sobelx = cv2.Sobel(gray, cv2.CV_32F, 1, 0, ksize=3)
-    sobely = cv2.Sobel(gray, cv2.CV_32F, 0, 1, ksize=3)
-    mag = cv2.magnitude(sobelx, sobely)
-    mag = cv2.normalize(mag, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-    lap = cv2.Laplacian(gray, cv2.CV_32F)
-    lap = cv2.convertScaleAbs(lap)
-    return canny, mag, lap
+results = stereo_edge_enhanced(left_img, right_img)
+edge_map = results["final"]
 ```
 
 ---
 
-### 3. 🔗 Fusione Stereo
+### 3. 🌊 Stima della Profondità
 
-* Le mappe edge sinistra e destra vengono fuse tramite media pixel-per-pixel:
+Il modulo `DeapMapProcessor` calcola:
+
+* Mappa di profondità con **StereoSGBM**
+* Maschera di salienza 3D
+* Visualizzazione con colormap `inferno`
 
 ```python
-def fuse_stereo_maps(maps_left, maps_right):
-    fused = [(l.astype(np.float32) + r.astype(np.float32)) / 2 for l, r in zip(maps_left, maps_right)]
-    return [cv2.convertScaleAbs(m) for m in fused]
+depth_map, depth_color, depth_mask = depth_processor.process()
 ```
 
 ---
 
-### 4. 🔀 Final Fusion
+### 4. 🔀 Fusione Edge & Profondità
 
-* Si calcola la media tra tutte le mappe fuse:
+Le due maschere (`depth_mask` e `edge_mask`) vengono combinate per evidenziare le regioni veramente salienti:
 
 ```python
-def final_fusion(fused_maps):
-    stacked = np.stack(fused_maps, axis=0).astype(np.float32)
-    mean_map = np.mean(stacked, axis=0)
-    return cv2.convertScaleAbs(mean_map)
+combined_mask = cv2.bitwise_and(depth_mask, edge_mask)
 ```
 
 ---
 
-### 5. 📦 Bounding Box
+### 5. 📦 Estrazione Box
 
-* Si estraggono le box dalla mappa `final`:
+Dalla maschera combinata si estraggono le **bounding box**:
 
 ```python
-bboxes = extract_bounding_boxes_from_edges(edge_map, min_area=100, threshold=50)
+contours, _ = cv2.findContours(combined_mask, ...)
+boxes = [cv2.boundingRect(c) for c in contours if area > min_area]
 ```
 
-* Le box vengono clusterizzate con **DBSCAN**
+---
+
+### 6. 🧹 Pulizia e Refinement
+
+Le box vengono:
+
+* Clusterizzate con **DBSCAN**
+* Filtrate per rimuovere quelle **troppo grandi**
+* Escluse le **box contenute** in altre
 
 ```python
-clustered, labels = cluster_boxes_dbscan(bboxes, eps=60, min_samples=1)
-```
-
-* Vengono rimosse box troppo grandi o contenute:
-
-```python
-notobig = remove_bigest_boxes(clustered, img_area, 0.9)
+merged_bboxes, _ = cluster_boxes_dbscan(...)
+notobig = remove_bigest_boxes(merged_bboxes, img_area, 0.9)
 noinside = remove_contained_boxes(notobig)
 ```
 
 ---
 
-### 6. 📷 Depth Estimation
+### 7. 🎯 Selezione Best Box
 
-* Calcolo della mappa di profondità tramite StereoSGBM:
+Viene scelta la **miglior box** combinando:
 
-```python
-depth_map = relative_depth_map(left_path, right_path)
-```
-
-* Visualizzazione con colormap inferno:
-
-```python
-plt.imsave("depth_map.png", depth_map, cmap='inferno')
-```
-
----
-
-### 7. 🎯 Selezione Miglior Box
-
-* Si crea una maschera dagli edge con threshold:
-
-```python
-edge_mask = (edge_map > 50).astype('uint8') * 255
-```
-
-* Si seleziona la best box in base a edge e profondità:
+* Mappa di profondità
+* Mappa di edge
 
 ```python
 best_box = pick_best_box(noinside, edge_mask, depth_map)
@@ -131,27 +109,45 @@ best_box = pick_best_box(noinside, edge_mask, depth_map)
 
 ---
 
-## ⚙️ Esecuzione
+## ⚙️ Come Eseguire
 
-Puoi usare la funzione principale:
+Puoi usare direttamente la classe principale:
 
 ```python
-from edge_pipeline import stereo_edge_enhanced
+from stereo_detector import StereoObjectDetector
+
+detector = StereoObjectDetector(left_path, right_path)
+result = detector.run()
 ```
 
-e collegare i moduli `box_utils` e `deapMap` per completare la pipeline end-to-end.
+Tutti i moduli vengono eseguiti in parallelo, e il risultato include:
+
+* Mappa di profondità
+* Maschere di edge
+* Maschera combinata
+* Box grezzi, box raffinati
+* Miglior box
 
 ---
 
 ## 🖼️ Visualizzazione
 
-Tutte le immagini usate nel grafo sono salvate nella repository pubblica:
+```python
+cv2.imshow("Depth Mask", result["depth_mask"])
+cv2.imshow("Edge Mask", result["edge_mask"])
+cv2.imshow("Combined Mask", result["combined_mask"])
+cv2.imshow("Detected Boxes", out_img)
+```
 
-🔗 [`MultimediaGio-Marco/immaginiGradoTD`](https://github.com/MultimediaGio-Marco/immaginiGradoTD)
+---
+
+## 📁 Dataset di riferimento
+
+Testato su immagini stereo del dataset **Holopix50k**.
 
 ---
 
 ## 👥 Autori
 
-* Giovanni Oliverio
-* Marco D'Albis
+* **Giovanni Oliverio**
+* **Marco D'Albis**
