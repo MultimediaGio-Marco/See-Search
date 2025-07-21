@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI; // <--- aggiunto
 using UnityEngine.XR;
 using System.Collections;
 using PassthroughCameraSamples;
@@ -9,13 +10,12 @@ public class StereoWebcamPhotoCapture : MonoBehaviour
     [Header("WebCamTexture Manager")]
     public WebCamTextureManager webCamTextureManager;
 
-    [Header("Quad Renderers")]
-    public Renderer leftQuadRenderer;
-    public Renderer rightQuadRenderer;
+    [Header("RawImage UI")]
+    public RawImage leftRawImage;
+    public RawImage rightRawImage;
 
     [Header("Controller Settings")]
     public XRNode controllerHand = XRNode.RightHand;
-    public string TextureName = "_MainTex";
 
     [Header("Image Filter Client")]
     public client imageFilterClient;
@@ -36,18 +36,14 @@ public class StereoWebcamPhotoCapture : MonoBehaviour
     {
         InputDevice device = InputDevices.GetDeviceAtXRNode(controllerHand);
 
-        if (device.isValid)
+        if (device.isValid && device.TryGetFeatureValue(CommonUsages.triggerButton, out bool triggerValue))
         {
-            bool triggerValue;
-            if (device.TryGetFeatureValue(CommonUsages.triggerButton, out triggerValue))
+            if (triggerValue && !triggerPressed)
             {
-                if (triggerValue && !triggerPressed)
-                {
-                    Debug.Log("Grilletto premuto - Avvio cattura stereo");
-                    StartCoroutine(CaptureStereoAndSend());
-                }
-                triggerPressed = triggerValue;
+                Debug.Log("Grilletto premuto - Avvio cattura stereo");
+                StartCoroutine(CaptureStereoAndSend());
             }
+            triggerPressed = triggerValue;
         }
     }
 
@@ -55,23 +51,23 @@ public class StereoWebcamPhotoCapture : MonoBehaviour
     {
         isCapturing = true;
 
-        // --- LEFT EYE ---
+        // LEFT
         webCamTextureManager.Eye = PassthroughCameraEye.Left;
         yield return new WaitForEndOfFrame();
         yield return new WaitForSeconds(0.1f);
         CapturePhoto(ref leftPhoto);
-        leftQuadRenderer.material.SetTexture(TextureName, leftPhoto);
+        leftRawImage.texture = leftPhoto;
         Debug.Log("📷 Foto occhio sinistro acquisita");
 
-        // --- RIGHT EYE ---
+        // RIGHT
         webCamTextureManager.Eye = PassthroughCameraEye.Right;
         yield return new WaitForEndOfFrame();
         yield return new WaitForSeconds(0.1f);
         CapturePhoto(ref rightPhoto);
-        rightQuadRenderer.material.SetTexture(TextureName, rightPhoto);
+        rightRawImage.texture = rightPhoto;
         Debug.Log("📷 Foto occhio destro acquisita");
 
-        // --- INVIO AL SERVER ---
+        // INVIO
         if (imageFilterClient != null)
         {
             Debug.Log("🌐 Invio immagini al server...");
